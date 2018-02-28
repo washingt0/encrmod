@@ -1,6 +1,7 @@
 package encrmod
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -72,4 +73,21 @@ func RSADecrypt(ciphertext []byte, key *rsa.PrivateKey) ([]byte, error) {
 		return []byte{}, err
 	}
 	return data, nil
+}
+
+func RSASign(key *rsa.PrivateKey, data []byte) ([]byte, error) {
+	hashed := sha256.Sum256(data)
+	signature, err := rsa.SignPSS(rand.Reader, key, crypto.SHA256, hashed[:], nil)
+	if err != nil {
+		return []byte{}, err
+	}
+	log.Printf("%x\n", signature)
+	return signature, nil
+}
+
+func RSAVerify(key *rsa.PublicKey, sig []byte, data []byte) error {
+	log.Printf("%x\n", sig)
+	hashed := sha256.Sum256(data)
+	err := rsa.VerifyPSS(key, crypto.SHA256, hashed[:], sig, nil)
+	return err
 }
