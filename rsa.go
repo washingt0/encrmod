@@ -77,7 +77,7 @@ func RSADecrypt(ciphertext []byte, key *rsa.PrivateKey) ([]byte, error) {
 
 func RSASign(key *rsa.PrivateKey, data []byte) ([]byte, error) {
 	hashed := sha256.Sum256(data)
-	signature, err := rsa.SignPSS(rand.Reader, key, crypto.SHA256, hashed[:], nil)
+	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, hashed[:])
 	if err != nil {
 		return []byte{}, err
 	}
@@ -88,6 +88,6 @@ func RSASign(key *rsa.PrivateKey, data []byte) ([]byte, error) {
 func RSAVerify(key *rsa.PublicKey, sig []byte, data []byte) error {
 	log.Printf("%x\n", sig)
 	hashed := sha256.Sum256(data)
-	err := rsa.VerifyPSS(key, crypto.SHA256, hashed[:], sig, nil)
+	err := rsa.VerifyPKCS1v15(key, crypto.SHA256, hashed[:], sig)
 	return err
 }
