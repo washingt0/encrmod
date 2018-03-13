@@ -11,12 +11,14 @@ import (
 )
 
 func Pad(src []byte) []byte {
+	// AES padding
 	padding := aes.BlockSize - len(src)%aes.BlockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(src, padtext...)
 }
 
 func Unpad(src []byte) ([]byte, error) {
+	// AES unpadding
 	length := len(src)
 	unpadding := int(src[length-1])
 
@@ -28,6 +30,7 @@ func Unpad(src []byte) ([]byte, error) {
 }
 
 func GenRandomKey(size int) []byte {
+	// Generate an AES key for a specific lenght
 	key := make([]byte, size/8)
 	_, err := rand.Read(key)
 	if err != nil {
@@ -37,6 +40,7 @@ func GenRandomKey(size int) []byte {
 }
 
 func AES256Enc(data []byte, key []byte) ([]byte, error) {
+	// Encrypt some []byte with AES-256 algorithm and return ciphertext
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return []byte{}, err
@@ -55,6 +59,7 @@ func AES256Enc(data []byte, key []byte) ([]byte, error) {
 }
 
 func AES256Dec(data []byte, key []byte) ([]byte, error) {
+	// Decrypt some ciphertext encrypted with AES-256 algorithm
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return []byte{}, err

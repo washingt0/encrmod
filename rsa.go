@@ -12,10 +12,12 @@ import (
 )
 
 func NewKeyPair(bits int) (*rsa.PrivateKey, error) {
+	// Generate a new key pair with the specified lenght
 	return rsa.GenerateKey(rand.Reader, bits)
 }
 
 func SaveKeys(priv *rsa.PrivateKey) bool {
+	// Save a key pair on disk
 	PubASN1 := x509.MarshalPKCS1PublicKey(&priv.PublicKey)
 	PrivASN1 := x509.MarshalPKCS1PrivateKey(priv)
 	pubBytes := pem.EncodeToMemory(&pem.Block{
@@ -32,6 +34,7 @@ func SaveKeys(priv *rsa.PrivateKey) bool {
 }
 
 func LoadPrivKey(path string) (*rsa.PrivateKey, error) {
+	// Load a private key from a file specified by path parameter
 	privBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Panic(err)
@@ -45,6 +48,7 @@ func LoadPrivKey(path string) (*rsa.PrivateKey, error) {
 }
 
 func LoadPubKey(path string) (*rsa.PublicKey, error) {
+	// Load a public key from a file specified by path parameter
 	pubBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Panic(err)
@@ -58,6 +62,7 @@ func LoadPubKey(path string) (*rsa.PublicKey, error) {
 }
 
 func RSAEncrypt(data []byte, key *rsa.PublicKey) ([]byte, error) {
+	// Encrypt data with RSA algorithm and SHA-256 as hash
 	label := []byte("XXX")
 	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, key, data, label)
 	if err != nil {
@@ -67,6 +72,7 @@ func RSAEncrypt(data []byte, key *rsa.PublicKey) ([]byte, error) {
 }
 
 func RSADecrypt(ciphertext []byte, key *rsa.PrivateKey) ([]byte, error) {
+	// Decrypt RSA ciphertext using SHA-256 as hash
 	label := []byte("XXX")
 	data, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, key, ciphertext, label)
 	if err != nil {
@@ -76,17 +82,17 @@ func RSADecrypt(ciphertext []byte, key *rsa.PrivateKey) ([]byte, error) {
 }
 
 func RSASign(key *rsa.PrivateKey, data []byte) ([]byte, error) {
+	// Sign some data with RSA private key
 	hashed := sha256.Sum256(data)
 	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, hashed[:])
 	if err != nil {
 		return []byte{}, err
 	}
-	log.Printf("%x\n", signature)
 	return signature, nil
 }
 
 func RSAVerify(key *rsa.PublicKey, sig []byte, data []byte) error {
-	log.Printf("%x\n", sig)
+	// Verify RSA signature
 	hashed := sha256.Sum256(data)
 	err := rsa.VerifyPKCS1v15(key, crypto.SHA256, hashed[:], sig)
 	return err

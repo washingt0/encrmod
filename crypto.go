@@ -9,6 +9,12 @@ import (
 )
 
 func EncryptFile(path string, key *rsa.PublicKey, priv *rsa.PrivateKey, output string) error {
+	/*
+		Encrypt a file with a unique AES-256 key and encrypt that key RSA,
+		next sign RSA encrypted content and append it to end of ciphertext.
+		The final file should be:
+		[ENCRYPTED_DATA] + [512 BYTES OF RSA ENCRYPTED CONTENT]
+	*/
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -21,7 +27,6 @@ func EncryptFile(path string, key *rsa.PublicKey, priv *rsa.PrivateKey, output s
 	sum := []byte(fmt.Sprintf("%x", sha256.Sum256(aescipher)))
 	rsaplain := append(filekey, sum...)
 	rsacipher, err := RSAEncrypt(rsaplain, key)
-	fmt.Printf("%x\n", sha256.Sum256(rsacipher))
 	if err != nil {
 		return err
 	}
@@ -36,11 +41,15 @@ func EncryptFile(path string, key *rsa.PublicKey, priv *rsa.PrivateKey, output s
 }
 
 func DecryptFile(path string, key *rsa.PrivateKey, pub *rsa.PublicKey, output string) error {
+	/*
+		Validate signed content and encrypted data integrity, after that,
+		decrypt AES-256 key from RSA ciphertext and decrypt AES-256 ciphertext
+		for plain text.
+	*/
 	blob, err := ioutil.ReadFile(path)
 	rsacipher := blob[len(blob)-512:]
 	aescipher := blob[:len(blob)-512]
 	sig, err := ioutil.ReadFile(path + ".sig")
-	fmt.Printf("%x\n", sha256.Sum256(rsacipher))
 	if err != nil {
 		return err
 	}
