@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
 )
 
 func EncryptFile(path string, key *rsa.PublicKey, priv *rsa.PrivateKey, output string) error {
@@ -72,5 +74,60 @@ func DecryptFile(path string, key *rsa.PrivateKey, pub *rsa.PublicKey, output st
 		return err
 	}
 	ioutil.WriteFile(output, data, 0644)
+	return nil
+}
+
+func EncryptFileS(in_path, out_path string, pub *rsa.PublicKey, priv *rsa.PrivateKey) error {
+	aeskey := GenRandomKey(256)
+	AES256Stream(in_path, out_path, aeskey)
+	rsacipher, err := RSAEncrypt(aeskey, pub)
+	if err != nil {
+		return err
+	}
+	inFile, err := os.Open(out_path)
+	if err != nil {
+		return err
+	}
+	defer inFile.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, inFile); err != nil {
+		return err
+	}
+	checkFile := h.Sum(nil)
+	sign, err := RSASign(priv, append(rsacipher, checkFile...))
+	if err != nil {
+		return err
+	}
+	ioutil.WriteFile(out_path+".meta", append(rsacipher, sign...), 0644)
+	return nil
+}
+
+func DecryptFileS(in_file, out_file string, pub *rsa.PublicKey, priv *rsa.PrivateKey) error {
+	meta, err := ioutil.ReadFile(in_file + ".meta")
+	if err != nil {
+		return err
+	}
+	rsacipher := append([]byte{}, meta[:512]...)
+	sign := append([]byte{}, meta[512:]...)
+	f, err := os.Open(in_file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return err
+	}
+	checkFile := h.Sum(nil)
+	if err = RSAVerify(pub, sign, append(rsacipher, checkFile...)); err != nil {
+		return err
+	}
+	key, err := RSADecrypt(rsacipher, priv)
+	if err != nil {
+		return err
+	}
+	if err = AES256Stream(in_file, out_file, key); err != nil {
+		return err
+	}
 	return nil
 }

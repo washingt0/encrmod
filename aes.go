@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"os"
 )
 
 func Pad(src []byte) []byte {
@@ -79,4 +80,29 @@ func AES256Dec(data []byte, key []byte) ([]byte, error) {
 		return []byte{}, err
 	}
 	return data, nil
+}
+
+func AES256Stream(origin, destination string, key []byte) error {
+	inFile, err := os.Open(origin)
+	if err != nil {
+		return err
+	}
+	defer inFile.Close()
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return err
+	}
+	// If the key is unique for each ciphertext, then it's ok to use a zero IV.
+	var iv [aes.BlockSize]byte
+	stream := cipher.NewOFB(block, iv[:])
+	outFile, err := os.OpenFile(destination, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+	writer := &cipher.StreamWriter{S: stream, W: outFile}
+	if _, err := io.Copy(writer, inFile); err != nil {
+		return err
+	}
+	return nil
 }
